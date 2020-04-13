@@ -1,0 +1,2 @@
+https://stackoverflow.com/questions/55336355/how-to-filter-classes-from-coco-dataset
+https://stackoverflow.com/questions/51100191/how-can-i-download-a-specific-part-of-coco-dataset

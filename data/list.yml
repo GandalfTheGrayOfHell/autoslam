@@ -1,0 +1,12 @@
+Tech:
+        - Python
+        - C++
+        - darknet (neural network)
+Frameworks and Dataset:
+        - OpenCV (computer vision)
+        - Pangolin (OpenGL window)
+        - Numpy (to handle matrix and related operations)
+        - SDL2 (to make video player)
+        - Skimage (algorithms)
+        - Coco Dataset (train neural network)
+        

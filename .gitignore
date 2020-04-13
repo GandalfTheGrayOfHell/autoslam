@@ -1,0 +1,7 @@
+*.class
+*.swp
+*.out
+crap*.*
+__pycache__/
+lalbaug.mp4
+debug.txt

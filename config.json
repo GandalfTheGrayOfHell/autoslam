@@ -1,0 +1,14 @@
+{
+	"path": "./videos/car.mp4",
+	"focal": 750,
+	"w3d": 0,
+	"w2d": 1,
+	"drawFeatures": 0,
+	"drawDarknet": 1,
+	"drawRoadLine": 0,
+	"labelsPath": "./modules/darknet/coco.names",
+	"weightsPath": "./modules/darknet/yolov3.weights",
+	"configPath": "./modules/darknet/yolov3.cfg",
+	"confidence": 0.7,
+	"threshold": 0.7
+}
