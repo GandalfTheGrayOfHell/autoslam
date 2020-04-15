@@ -17,4 +17,3 @@ def init_params(stream, config):
 				  [0.0, 0.0, 1.0]])
 
 	return W, H, FPS, F, K
-

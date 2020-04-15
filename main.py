@@ -44,13 +44,14 @@ if __name__ == '__main__':
 
 		if ret == True:
 			# TODO: Right now GPU resize is slower than CPU resize. Maybe once the workload increase do a performance check
+			# UPDATE: the upload and download to gpu is very expensive. not gonna work most likely
 			# frame = cv2.cuda.resize(cv2.cuda_GpuMat(frame), (W, H)).download()
 			frame = cv2.resize(frame, (W, H))
 			
 			darknet.input(frame)
 			#lines = roadline_detector.input(frame)
-			slam.input(frame)
-			#darknet.draw(frame)
+			frame = slam.input(frame)
+			frame = darknet.draw(frame)
 			#roadline_detector.draw(frame)
 
 			if i > 0:

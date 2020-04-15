@@ -3,7 +3,7 @@
 	"focal": 750,
 	"w3d": 0,
 	"w2d": 1,
-	"drawFeatures": 0,
+	"drawFeatures": 1,
 	"drawDarknet": 1,
 	"drawRoadLine": 0,
 	"labelsPath": "./modules/darknet/coco.names",
