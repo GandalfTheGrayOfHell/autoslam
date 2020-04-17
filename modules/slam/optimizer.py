@@ -2,17 +2,6 @@ import g2o
 import numpy as np
 
 def optimize(frames, points, local_window, fix_points=False, verbose=False, iterations=50):
-    """optimize using g2o
-
-    :frame: TODO
-    :points: TODO
-    :local_window: TODO
-    :fix_points: TODO
-    :verbose: TODO
-    :iterations: TODO
-    :returns: TODO
-
-    """
     if local_window is None:
         local_frames = frames
     else:
@@ -23,11 +12,9 @@ def optimize(frames, points, local_window, fix_points=False, verbose=False, iter
     solver = g2o.OptimizationAlgorithmLevenberg(solver)
     optimizer.set_algorithm(solver)
 
-    # add normalized camera
     cam = g2o.CameraParameters(1.0, (0.0, 0.0), 0)
     cam.set_id(0)
     optimizer.add_parameter(cam)
-
 
     huber_threshold = np.sqrt(5.991)
     huber_kernel = g2o.RobustKernelHuber(huber_threshold)
@@ -46,7 +33,6 @@ def optimize(frames, points, local_window, fix_points=False, verbose=False, iter
         est = v_se3.estimate()
         assert np.allclose(pose[0:3, 0:3], est.rotation().matrix())
         assert np.allclose(pose[0:3, 3], est.translation())
-
 
         graph_frames[f] = v_se3
 

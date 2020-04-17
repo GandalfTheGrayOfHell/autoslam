@@ -3,19 +3,81 @@ import numpy as np
 
 class RoadLineDetector(object):
 	def __init__(self, args):
-		pass
+		self.drawRoadLine = args["drawRoadLine"]
 
-	def input(self, image):
-		pass
+	def input(self, shared_image, shape):
+		image = np.frombuffer(shared_image.get_obj(), dtype=np.uint8)
+		image.shape = shape
+		b_w = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+		canny = cv2.Canny(image, 50, 150)
+		gaussian_7 = cv2.GaussianBlur(image, (7, 7), 0)
+		color_edges = np.dstack((gaussian_7, gaussian_7, gaussian_7))
 
-	def draw(self, img):
-		pass
+		rows, cols   = image.shape[:2]
+		bottom_left  = [int(cols*0.02), int(rows*1)]
+		top_left     = [int(cols*0.35), int(rows*0.65)]
+		bottom_right = [int(cols*0.98), int(rows*1)]
+		top_right    = [int(cols*0.65), int(rows*0.65)]
 
-	def canny(self, img, low_threshold, high_threshold):
-		return cv2.Canny(img, low_threshold, high_threshold)
+		vertices = np.array([[bottom_left, top_left, top_right, bottom_right]], dtype=np.int32)
+		interested = self.region_of_interest(image, vertices)
 
-	def gaussian_blur(self, img, kernel_size):
-		return cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
+		lines = cv2.HoughLinesP(cv2.cvtColor(interested, cv2.COLOR_RGB2GRAY), 1, 0.03490658503988659, 5, np.array([]), minLineLength=10, maxLineGap=8) # np.pi/90
+
+		if self.drawRoadLine == 1:
+			for line in lines:
+				for x1, y1, x2, y2 in line:
+					cv2.line(image, (x1, y1), (x2, y2), [255, 0, 0], 2)
+
+		cv2.imshow("inside", image)
+		cv2.waitKey(-1)
+
+		right_sides = { 'x': [], 'y': [] }
+		left_sides = { 'x' :[], 'y': [] }
+
+		# TODO: improve this logic later
+		half = image.shape[1] // 2
+
+		for lane in lines:
+			for x1,y1,x2,y2 in lane:
+				if x1 < half:
+					left_sides['x'].append(x2)
+					left_sides['y'].append(y2)
+				else:
+					right_sides['x'].append(x1)
+					right_sides['y'].append(y1)
+
+		a_right, b_right = np.polyfit([np.min(right_sides['y']), np.max(right_sides['y'])],
+									  [np.min(right_sides['x']), np.max(right_sides['x'])], 1)
+		a_left, b_left = np.polyfit([np.max(left_sides['y']), np.min(left_sides['y'])],
+									[np.min(left_sides['x']), np.max(left_sides['x'])], 1)
+
+		BottomRightX = int(image.shape[0] * a_right + b_right)
+		BottomLeftX = int(image.shape[0] * a_left + b_left)
+
+		TopRightX = np.min(right_sides['x'])
+		TopRightY = np.min(right_sides['y'])
+		TopLeftX = np.max(left_sides['x'])
+		TopLeftY = np.min(left_sides['y'])
+
+		if TopRightY < TopLeftY:
+			TopLeftY = TopRightY
+		else:
+			TopRightY = TopLeftY
+
+		top = (TopLeftX + int((TopRightX - TopLeftX) / 2), TopLeftY)
+		bottom = (BottomLeftX + int((BottomRightX - BottomLeftX) / 2), image.shape[0])
+
+		ratio_road = int((image.shape[1]-(BottomRightX-BottomLeftX))/2)
+		steering = (BottomLeftX / ratio_road) - 1
+
+		if steering < 0:
+			string_steering = 'move to left: %.2fm'%(steering)
+		else:
+			string_steering = 'move to right: %.2fm'%(steering)
+
+		print(string_steering)
+
 
 	def region_of_interest(self, img, vertices):
 		mask = np.zeros_like(img)   
@@ -23,20 +85,10 @@ class RoadLineDetector(object):
 			channel_count = img.shape[2]
 			ignore_mask_color = (255,) * channel_count
 		else:
-			ignore_mask_color = 255   
+			ignore_mask_color = 255
 		cv2.fillPoly(mask, vertices, ignore_mask_color)
 		masked_image = cv2.bitwise_and(img, mask)
 		return masked_image
-
-
-
-
-
-
-
-
-
-
 
 
 # import cv2

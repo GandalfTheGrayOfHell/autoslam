@@ -8,10 +8,8 @@ from . import helpers as helper
 
 
 class Frame(object):
-	""" Frame object contains keypoints, associated map-points, etc"""
 	newid = itertools.count().__next__
 	def __init__(self, image, K):
-		""" Detect keypoints and compute descriptors"""
 		self.K = K
 		self.K_inv = np.linalg.inv(K)
 		self.pose = np.eye(4)
@@ -23,15 +21,8 @@ class Frame(object):
 			self.image = image
 			self.extractFeatures(image)
 			self.map_points = [None]*len(self.keypoints_un)
-
-
+			
 	def extractFeatures(self, image):
-		"""Extract keypoints and compute descriptors
-
-		:image:
-		:returns: TODO
-
-		"""
 		corners = cv2.goodFeaturesToTrack(np.mean(image, axis=2).astype(np.uint8), 2000, qualityLevel=0.02, minDistance=7)
 		keypoints = [cv2.KeyPoint(x=c[0][0], y=c[0][1], _size=20) for c in corners]
 		keypoints, self.descriptors = self.orb.compute(image, keypoints)
@@ -39,13 +30,6 @@ class Frame(object):
 		self.keypoints_un = np.asarray(keypoints)
 
 	def drawFrame(self, points1, points2):
-		"""Draw keypoints and tracks on the image
-
-		:points1:
-		:points2:
-		:returns: TODO
-
-		"""
 		image = np.copy(self.image)
 		if (points1.shape[0] > 0) and (points2.shape[0] > 0):
 			for i in range(points1.shape[0]):
@@ -60,4 +44,3 @@ class Frame(object):
 		if not hasattr(self, '_kps'):
 			self._kps = helper.normalizePoints(self.keypoints_un, self.K_inv)
 		return self._kps
-

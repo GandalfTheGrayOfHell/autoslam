@@ -24,17 +24,6 @@ def hamming_distance(a, b):
 
 
 def recoverPose(E, pts1, pts2, K, width, height):
-    '''
-    Estimate all possible M2 and return the correct M2 and 3D points P
-    :param pred_pts1:
-    :param pred_pts2:
-    :param intrinsics:
-    :param M:
-    :return: M2, the extrinsics of camera 2
-                     C2, the 3x4 camera matrix
-                     P, 3D points after triangulation (Nx3)
-    '''
-
     M1 = np.eye(3)
     C1 = K @ np.hstack((M1, np.zeros((3, 1))))
     M2_list = camera2(E)
@@ -56,36 +45,16 @@ def recoverPose(E, pts1, pts2, K, width, height):
     return R, t, P
 
 def normalizePoints(points, Kinv):
-    """ normalize the keypoints of the frame w.r.t size of the frame
-
-    :points: TODO
-    :returns: TODO
-
-    """
     no_points = points.shape[0]
     homo_pts = np.hstack((points, np.ones((no_points, 1))))
     return (Kinv @ homo_pts.T).T[:, 0:2]
+    
 def denormalizePoints(points, K):
-    """denormalize the keypoints
-
-    :points: TODO
-    :K: TODO
-    :returns: TODO
-
-    """
     no_points = points.shape[0]
     homo_pts = np.hstack((points, np.ones((no_points, 1))))
     return (K @ homo_pts.T).T[:, 0:2]
+
 def triangulate(C1, pts1, C2, pts2):
-    """TODO: Docstring for triangulate.
-
-    :C1: TODO
-    :pts1: TODO
-    :C2: TODO
-    :pts2: TODO
-    :returns: 3D world coordinates, ReprojectionError
-
-    """
     no_points = pts1.shape[0]
     p1_c1 = C1[0, :][:, None]
     p2_c1 = C1[1, :][:, None]
@@ -120,15 +89,6 @@ def triangulate(C1, pts1, C2, pts2):
     return W[:, 0:3], err
 
 def projectPoints(points3d, pose, width, height):
-    """Project the points through projection matrix
-
-    :points3d:
-    :pose: TODO
-    :width: TODO
-    :height: TODO
-    :returns: Normalized image coordinates
-
-    """
     points3d = np.asarray(points3d)
     if len(points3d.shape) == 1:
         points3d = points3d[..., np.newaxis].T
