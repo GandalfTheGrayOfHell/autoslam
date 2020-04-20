@@ -5,9 +5,7 @@ class RoadLineDetector(object):
 	def __init__(self, args):
 		self.drawRoadLine = args["drawRoadLine"]
 
-	def input(self, shared_image, shape):
-		image = np.frombuffer(shared_image.get_obj(), dtype=np.uint8)
-		image.shape = shape
+	def input(self, image):
 		b_w = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 		canny = cv2.Canny(image, 50, 150)
 		gaussian_7 = cv2.GaussianBlur(image, (7, 7), 0)
@@ -22,23 +20,15 @@ class RoadLineDetector(object):
 		vertices = np.array([[bottom_left, top_left, top_right, bottom_right]], dtype=np.int32)
 		interested = self.region_of_interest(image, vertices)
 
-		lines = cv2.HoughLinesP(cv2.cvtColor(interested, cv2.COLOR_RGB2GRAY), 1, 0.03490658503988659, 5, np.array([]), minLineLength=10, maxLineGap=8) # np.pi/90
-
-		if self.drawRoadLine == 1:
-			for line in lines:
-				for x1, y1, x2, y2 in line:
-					cv2.line(image, (x1, y1), (x2, y2), [255, 0, 0], 2)
-
-		cv2.imshow("inside", image)
-		cv2.waitKey(-1)
+		self.lines = cv2.HoughLinesP(cv2.cvtColor(interested, cv2.COLOR_RGB2GRAY), 1, 0.03490658503988659, 5, np.array([]), minLineLength=10, maxLineGap=8) # np.pi/90
 
 		right_sides = { 'x': [], 'y': [] }
-		left_sides = { 'x' :[], 'y': [] }
+		left_sides = { 'x' : [], 'y': [] }
 
 		# TODO: improve this logic later
 		half = image.shape[1] // 2
 
-		for lane in lines:
+		for lane in self.lines:
 			for x1,y1,x2,y2 in lane:
 				if x1 < half:
 					left_sides['x'].append(x2)
@@ -68,7 +58,7 @@ class RoadLineDetector(object):
 		top = (TopLeftX + int((TopRightX - TopLeftX) / 2), TopLeftY)
 		bottom = (BottomLeftX + int((BottomRightX - BottomLeftX) / 2), image.shape[0])
 
-		ratio_road = int((image.shape[1]-(BottomRightX-BottomLeftX))/2)
+		ratio_road = int((image.shape[1] - (BottomRightX-BottomLeftX)) / 2)
 		steering = (BottomLeftX / ratio_road) - 1
 
 		if steering < 0:
@@ -77,7 +67,6 @@ class RoadLineDetector(object):
 			string_steering = 'move to right: %.2fm'%(steering)
 
 		print(string_steering)
-
 
 	def region_of_interest(self, img, vertices):
 		mask = np.zeros_like(img)   
@@ -89,6 +78,15 @@ class RoadLineDetector(object):
 		cv2.fillPoly(mask, vertices, ignore_mask_color)
 		masked_image = cv2.bitwise_and(img, mask)
 		return masked_image
+
+	def draw(self, image):
+		if self.drawRoadLine == 1:
+			for line in self.lines:
+				for x1, y1, x2, y2 in line:
+					cv2.line(image, (x1, y1), (x2, y2), [255, 0, 0], 2)
+			return image
+		else:
+			return image
 
 
 # import cv2

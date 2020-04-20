@@ -5,8 +5,6 @@ import time
 import numpy as np
 
 
-from multiprocessing import Process
-
 from modules.slam import Slam, Display
 from modules import helpers as hm
 from modules.darknet import Darknet
@@ -43,17 +41,13 @@ if __name__ == '__main__':
 		ret, frame = capture.read()
 
 		if ret == True:
-			# TODO: Right now GPU resize is slower than CPU resize. Maybe once the workload increase do a performance check
-			# UPDATE: the upload and download to gpu is very expensive. not gonna work most likely
-			# frame = cv2.cuda.resize(cv2.cuda_GpuMat(frame), (W, H)).download()
 			frame = cv2.resize(frame, (W, H))
-			shape = frame.shape
-			shared_frame = Array('B', frame)
 			
 			darknet.input(frame)
 			roadline_detector.input(frame)
 			frame = slam.input(frame)
 			frame = darknet.draw(frame)
+			frame = roadline_detector.draw(frame)
 
 			if i > 0:
 				cv2.imshow('frame', frame)

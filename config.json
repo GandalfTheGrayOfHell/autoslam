@@ -5,7 +5,7 @@
 	"w2d": 1,
 	"drawFeatures": 1,
 	"drawDarknet": 1,
-	"drawRoadLine": 1,
+	"drawRoadLine": 0,
 	"labelsPath": "./modules/darknet/coco.names",
 	"weightsPath": "./modules/darknet/yolov3.weights",
 	"configPath": "./modules/darknet/yolov3.cfg",
