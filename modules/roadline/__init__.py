@@ -2,71 +2,115 @@ import cv2
 import numpy as np
 
 class RoadLineDetector(object):
-	def __init__(self, args):
-		self.drawRoadLine = args["drawRoadLine"]
+	def __init__(self, config, shape):
+		self.drawRoadLine = config["drawRoadLine"]
+		self.drawRoadRegion = config["drawRoadRegion"]
+
+		self.previous_a_right, self.previous_b_right = 0, 0
+		self.previous_a_left, self.previous_b_left = 0, 0
+
+		self.TopLeftX, self.TopLeftY = 0, 0
+		self.BottomLeftX, self.BottomRightX = 0, 0
+		self.TopRightX, self.TopRightY = 0, 0
+
+		cols, rows = shape
+		print(shape)
+		self.bottom_left = [int(cols * 0.22), int(rows * 1)]
+		self.top_left = [int(cols * 0.50), int(rows * 0.65)]
+		self.bottom_right = [int(cols * 1), int(rows * 1)]
+		self.top_right = [int(cols * 0.70), int(rows * 0.65)]
+	
+	def draw(self, image):
+		if self.drawRoadLine == 1:
+			cv2.line(image, (self.TopLeftX, self.TopLeftY), (self.BottomLeftX, image.shape[0]), (255, 0, 0), 8)
+			cv2.line(image, (self.TopRightX, self.TopRightY), (self.BottomRightX, image.shape[0]), (255, 0, 0), 8)
+
+			top = (self.TopLeftX + int((self.TopRightX - self.TopLeftX) / 2), self.TopLeftY)
+			bottom = (self.BottomLeftX + int((self.BottomRightX - self.BottomLeftX) / 2), image.shape[0])
+			cv2.line(image, top, bottom, (255, 255, 255), 1)
+
+			if self.drawRoadRegion == 1:
+				window_img = np.zeros_like(image)
+				polyfill = np.array([self.bottom_left, self.bottom_right, self.top_right, self.top_left])
+				cv2.fillPoly(window_img, pts=[polyfill], color=(0, 255, 0))
+				image = cv2.addWeighted(image, 1, window_img, 0.3, 0)
+
+		return image
 
 	def input(self, image):
-		b_w = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-		canny = cv2.Canny(image, 50, 150)
-		gaussian_7 = cv2.GaussianBlur(image, (7, 7), 0)
-		color_edges = np.dstack((gaussian_7, gaussian_7, gaussian_7))
+		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+		edges = cv2.Canny(gray, 100, 150)
+		blur_gray = cv2.GaussianBlur(edges, (7, 7), 0) # useless
 
-		rows, cols   = image.shape[:2]
-		bottom_left  = [int(cols*0.02), int(rows*1)]
-		top_left     = [int(cols*0.35), int(rows*0.65)]
-		bottom_right = [int(cols*0.98), int(rows*1)]
-		top_right    = [int(cols*0.65), int(rows*0.65)]
+		smoothing = 0.95
 
-		vertices = np.array([[bottom_left, top_left, top_right, bottom_right]], dtype=np.int32)
-		interested = self.region_of_interest(image, vertices)
+		vertices = np.array([[self.bottom_left, self.top_left, self.top_right, self.bottom_right]], dtype=np.int32)
+		interested = self.region_of_interest(edges, vertices)
 
-		self.lines = cv2.HoughLinesP(cv2.cvtColor(interested, cv2.COLOR_RGB2GRAY), 1, 0.03490658503988659, 5, np.array([]), minLineLength=10, maxLineGap=8) # np.pi/90
-
+		lines = cv2.HoughLinesP(interested, 1, 0.03490658503988659, 10, np.array([]), minLineLength=10, maxLineGap=8) # np.pi / 90
+		
+		left_sides = { 'x': [], 'y': [] }
 		right_sides = { 'x': [], 'y': [] }
-		left_sides = { 'x' : [], 'y': [] }
 
-		# TODO: improve this logic later
-		half = image.shape[1] // 2
-
-		for lane in self.lines:
-			for x1,y1,x2,y2 in lane:
+		half = (image.shape[1] // 2) + 140
+		
+		for lane in lines:
+			for x1, y1, x2, y2 in lane:
 				if x1 < half:
 					left_sides['x'].append(x2)
 					left_sides['y'].append(y2)
 				else:
 					right_sides['x'].append(x1)
 					right_sides['y'].append(y1)
+		
+		a_right, b_right = np.polyfit([np.min(right_sides['y']), np.max(right_sides['y'])], [np.min(right_sides['x']), np.max(right_sides['x'])], 1)
 
-		a_right, b_right = np.polyfit([np.min(right_sides['y']), np.max(right_sides['y'])],
-									  [np.min(right_sides['x']), np.max(right_sides['x'])], 1)
-		a_left, b_left = np.polyfit([np.max(left_sides['y']), np.min(left_sides['y'])],
-									[np.min(left_sides['x']), np.max(left_sides['x'])], 1)
-
-		BottomRightX = int(image.shape[0] * a_right + b_right)
-		BottomLeftX = int(image.shape[0] * a_left + b_left)
-
-		TopRightX = np.min(right_sides['x'])
-		TopRightY = np.min(right_sides['y'])
-		TopLeftX = np.max(left_sides['x'])
-		TopLeftY = np.min(left_sides['y'])
-
-		if TopRightY < TopLeftY:
-			TopLeftY = TopRightY
+		a_left, b_left = np.polyfit([np.max(left_sides['y']), np.min(left_sides['y'])], [np.min(left_sides['x']), np.max(left_sides['x'])], 1)
+		
+		if self.previous_a_right == 0 and self.previous_b_right == 0:
+			self.previous_a_right = a_right
+			self.previous_b_right = b_right
 		else:
-			TopRightY = TopLeftY
+			a_right = self.previous_a_right * smoothing + (1 - smoothing) * a_right
+			self.previous_a_right = a_right
+			b_right = self.previous_b_right * smoothing + (1 - smoothing) * b_right
+			self.previous_b_right = b_right
+			
+		if self.previous_a_left == 0 and self.previous_b_left == 0:
+			self.previous_a_left = a_left
+			self.previous_b_left = b_left
+		else:
+			a_left = self.previous_a_left * smoothing + (1 - smoothing) * a_left
+			self.previous_a_left = a_left
+			b_left = self.previous_b_left * smoothing + (1 - smoothing) * b_left
+			self.previous_b_left = b_left
+		
+		self.BottomRightX = int(image.shape[0] * a_right + b_right)
+		self.BottomLeftX = int(image.shape[0] * a_left + b_left)
+		
+		self.TopRightX = np.min(right_sides['x'])
+		self.TopRightY = np.min(right_sides['y'])
+		self.TopLeftX = np.max(left_sides['x'])
+		self.TopLeftY = np.min(left_sides['y'])
+		
+		if self.TopRightY < self.TopLeftY:
+			self.TopLeftY = self.TopRightY
+			self.TopLeftX = int(self.TopLeftY * a_left + b_left)
+		else:
+			self.TopRightY = self.TopLeftY
+			self.TopRightX = int(self.TopRightY * a_right + b_right)
 
-		top = (TopLeftX + int((TopRightX - TopLeftX) / 2), TopLeftY)
-		bottom = (BottomLeftX + int((BottomRightX - BottomLeftX) / 2), image.shape[0])
-
-		ratio_road = int((image.shape[1] - (BottomRightX-BottomLeftX)) / 2)
-		steering = (BottomLeftX / ratio_road) - 1
+		# cv2.line(image, (half, 0), (half, cols), (255, 255, 0), 2)
+		
+		ratio_road = int((image.shape[1] - (self.BottomRightX - self.BottomLeftX)) / 2)
+		steering = (self.BottomLeftX / ratio_road) - 1
 
 		if steering < 0:
-			string_steering = 'move to left: %.2fm'%(steering)
+			string_steering = 'move to left: %.2fm' % (steering)
 		else:
-			string_steering = 'move to right: %.2fm'%(steering)
+			string_steering = 'move to right: %.2fm' % (steering)
 
-		print(string_steering)
+		print(string_steering, flush=False)
 
 	def region_of_interest(self, img, vertices):
 		mask = np.zeros_like(img)   
@@ -75,91 +119,132 @@ class RoadLineDetector(object):
 			ignore_mask_color = (255,) * channel_count
 		else:
 			ignore_mask_color = 255
+		
 		cv2.fillPoly(mask, vertices, ignore_mask_color)
+
 		masked_image = cv2.bitwise_and(img, mask)
+
 		return masked_image
 
-	def draw(self, image):
-		if self.drawRoadLine == 1:
-			for line in self.lines:
-				for x1, y1, x2, y2 in line:
-					cv2.line(image, (x1, y1), (x2, y2), [255, 0, 0], 2)
-			return image
-		else:
-			return image
 
+'''
+Want:
+[[[ 422 1080]
+  [ 960  702]
+  [1344  702]
+  [1920 1080]]]
 
-# import cv2
-# import numpy as np
+'''
 
 # class RoadLineDetector(object):
-# 	def __init__(self, args):
-# 		self.drawRoadLine = args["drawRoadLine"]
-# 		self.lines = None
+# 	def __init__(self, config):
+# 		self.drawRoadLine = config["drawRoadLine"]
+# 		self.previous_a_right, self.previous_b_right = 0, 0
+# 		self.previous_a_left, self.previous_b_left = 0, 0
 
-# 	def input(self, frame):
-# 		canny_image = self.canny_edge_detector(frame)
-# 		cv2.imwrite("canny.jpg", canny_image)
-# 		cropped_image = self.region_of_interest(canny_image)
-# 		cv2.imwrite("cropped.jpg", cropped_image)
-# 		self.lines = cv2.HoughLinesP(cropped_image, 2, np.pi/180, 150, np.array([]), minLineLength=30, maxLineGap=0)
-# 		cv2.imwrite("hough.jpg", self.lines)
-# 		self.lines = self.average_slope_intercept(frame)
-# 		cv2.imwrite("intercept.jpg", self.lines)
-			
-# 	def canny_edge_detector(self, frame):  
-# 		blur = cv2.GaussianBlur(frame, (5, 5), 0)  
-# 		canny = cv2.Canny(blur, 50, 150) 
-# 		return canny 
+# 	def grayscale(self, img):
+# 		return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+	
+# 	def canny(self, img, low_threshold, high_threshold):
+# 		return cv2.Canny(img, low_threshold, high_threshold)
 
+# 	def gaussian_blur(self, img, kernel_size):
+# 		return cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
 
-# 	def region_of_interest(self, image): 
-# 		height = image.shape[0] 
-# 		polygons = np.array([[(200, height), (1100, height), (550, 250)]])
-# 		mask = np.zeros_like(image)
-# 		cv2.fillPoly(mask, polygons, 255)
-# 		return cv2.cuda.bitwise_and(image, mask) 
+# 	def region_of_interest(self, img, vertices):
+# 		mask = np.zeros_like(img)   
+# 		if len(img.shape) > 2:
+# 			channel_count = img.shape[2]
+# 			ignore_mask_color = (255,) * channel_count
+# 		else:
+# 			ignore_mask_color = 255
+			 
+# 		cv2.fillPoly(mask, vertices, ignore_mask_color)
+# 		masked_image = cv2.bitwise_and(img, mask)
+# 		return masked_image
 
-# 	def create_coordinates(self, image, line_parameters):
-# 		slope, intercept = line_parameters
+# 	def input(self, image):
+# 		gray = self.grayscale(image)
+# 		edges = self.canny(gray, 100, 150)
+# 		blur_gray = self.gaussian_blur(edges, 7)
+
+# 		rows, cols   = image.shape[:2]
+# 		smoothing = 0.95
+# 		bottom_left  = [int(cols*0.22), int(rows*1)]
+# 		top_left     = [int(cols*0.50), int(rows*0.65)]
+# 		bottom_right = [int(cols*1), int(rows*1)]
+# 		top_right    = [int(cols*0.70), int(rows*0.65)]
+# 		vertices = np.array([[bottom_left, top_left, top_right, bottom_right]], dtype=np.int32)
+# 		interested = self.region_of_interest(edges, vertices)
+
+# 		self.lines = cv2.HoughLinesP(interested, 1, np.pi/90, 10, np.array([]), minLineLength=10, maxLineGap=8)
+
+# 		right_sides = { 'x': [], 'y': [] }
+# 		left_sides = { 'x': [], 'y': [] }
+# 		half = (image.shape[1] // 2) + 100
 		
-# 		y1 = image.shape[0] 
-# 		y2 = int(y1 * (3 / 5)) 
-# 		x1 = int((y1 - intercept) / slope) 
-# 		x2 = int((y2 - intercept) / slope) 
-# 		return np.array([x1, y1, x2, y2])
+# 		for lane in self.lines:
+# 			for x1,y1,x2,y2 in lane:
+# 				if x1 < half:
+# 					left_sides['x'].append(x2)
+# 					left_sides['y'].append(y2)
+# 				else:
+# 					right_sides['x'].append(x1)
+# 					right_sides['y'].append(y1)
+		
+# 		a_right, b_right = np.polyfit([np.min(right_sides['y']), np.max(right_sides['y'])], [np.min(right_sides['x']), np.max(right_sides['x'])], 1)
 
+# 		a_left, b_left = np.polyfit([np.max(left_sides['y']), np.min(left_sides['y'])], [np.min(left_sides['x']) ,np.max(left_sides['x'])], 1)
+		
+# 		if self.previous_a_right == 0 and self.previous_b_right == 0:
+# 			self.previous_a_right = a_right
+# 			self.previous_b_right = b_right
+# 		else:
+# 			a_right = self.previous_a_right * smoothing + (1 - smoothing) * a_right
+# 			self.previous_a_right = a_right
+# 			b_right = self.previous_b_right * smoothing + (1 - smoothing) * b_right
+# 			self.previous_b_right = b_right
+			
+# 		if self.previous_a_left == 0 and self.previous_b_left == 0:
+# 			self.previous_a_left = a_left
+# 			self.previous_b_left = b_left
+# 		else:
+# 			a_left = self.previous_a_left * smoothing + (1 - smoothing) * a_left
+# 			self.previous_a_left = a_left
+# 			b_left = self.previous_b_left * smoothing + (1 - smoothing) * b_left
+# 			self.previous_b_left = b_left
+		
+# 		self.BottomRightX = int(image.shape[0] * a_right + b_right)
+# 		self.BottomLeftX = int(image.shape[0] * a_left + b_left)
+		
+# 		self.TopRightX = np.min(right_sides['x'])
+# 		self.TopRightY = np.min(right_sides['y'])
+# 		self.TopLeftX = np.max(left_sides['x'])
+# 		self.TopLeftY = np.min(left_sides['y'])
+		
+# 		if self.TopRightY < self.TopLeftY:
+# 			self.TopLeftY = self.TopRightY
+# 			self.TopLeftX = int(self.TopLeftY * a_left + b_left)
+# 		else:
+# 			self.TopRightY = self.TopLeftY
+# 			self.TopRightX = int(self.TopRightY * a_right + b_right)
+						
+# 		ratio_road = int((image.shape[1] - (self.BottomRightX - self.BottomLeftX)) / 2)
+# 		steering = (self.BottomLeftX / ratio_road) - 1
 
-# 	def average_slope_intercept(self, image): 
-# 		left_fit, right_fit = [], []
+# 		if steering < 0:
+# 			string_steering = '%.2f'%(steering)
+# 		else:
+# 			string_steering = '%.2f'%(steering)
 
-# 		for line in self.lines: 
-# 			x1, y1, x2, y2 = line.reshape(4) 
-# 			parameters = np.polyfit((x1, x2), (y1, y2), 1)  
-# 			slope = parameters[0] 
-# 			intercept = parameters[1] 
-# 			if slope < 0: 
-# 				left_fit.append((slope, intercept)) 
-# 			else: 
-# 				right_fit.append((slope, intercept)) 
-				
-# 				left_fit_average = np.average(left_fit, axis=0) 
-# 				right_fit_average = np.average(right_fit, axis=0) 
-# 				left_line = self.create_coordinates(image, left_fit_average) 
-# 				right_line = self.create_coordinates(image, right_fit_average) 
-# 				return np.array([left_line, right_line])
+# 		print(string_steering)
+		
+# 		return image
 
 # 	def draw(self, image):
 # 		if self.drawRoadLine == 1:
-# 			line_image = np.zeros_like(image) 
-# 			if self.lines is not None: 
-# 				for x1, y1, x2, y2 in self.lines:
-# 					try: 
-# 						cv2.line(line_image, (x1, y1), (x2, y2), (255, 0, 0), 10)
-# 					except OverflowError:
-# 						print("[INFO] (road/display_lines) Integer out of bounds")
-# 						return cv2.cuda.addWeighted(image, 0.8, line_image, 1, 1)
-# 					else:
-# 						return image
-# 		else:
-# 			return image
+# 			top = (self.TopLeftX + int((self.TopRightX - self.TopLeftX) / 2), self.TopLeftY)
+# 			bottom = (self.BottomLeftX + int((self.BottomRightX - self.BottomLeftX)/2), image.shape[0])
+# 			cv2.line(image, (self.TopLeftX, self.TopLeftY), (self.BottomLeftX, image.shape[0]), (255, 0, 0), 8)
+# 			cv2.line(image, (self.TopRightX, self.TopRightY), (self.BottomRightX, image.shape[0]), (255, 0, 0), 8)
+# 			cv2.line(image, top, bottom, (255,255,255), 1)

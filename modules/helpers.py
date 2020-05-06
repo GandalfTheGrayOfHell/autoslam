@@ -6,10 +6,10 @@ def init_params(stream, config):
 	H = int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
 	FPS = stream.get(cv2.CAP_PROP_FPS)
 
-	if W > 1024:
-		aspect = 1024 / W
-		H = int(H * aspect)
-		W = 1024
+	# if W > 1024:
+	# 	aspect = 1024 / W
+	# 	H = int(H * aspect)
+	# 	W = 1024
 	
 	F = config["focal"]
 	K = np.array([[F, 0.0, W // 2],

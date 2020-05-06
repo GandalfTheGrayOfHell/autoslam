@@ -33,7 +33,7 @@ if __name__ == '__main__':
 	slam = Slam(K, W, H)
 	disp = Display()
 	darknet = Darknet(config, (W, H))
-	roadline_detector = RoadLineDetector(config)
+	roadline_detector = RoadLineDetector(config, (W, H))
 	start_time = time.time()
 
 	i = 0
@@ -41,16 +41,16 @@ if __name__ == '__main__':
 		ret, frame = capture.read()
 
 		if ret == True:
-			frame = cv2.resize(frame, (W, H))
-			
+			# frame = cv2.resize(frame, (W, H))
+
 			darknet.input(frame)
 			roadline_detector.input(frame)
 			frame = slam.input(frame)
-			frame = darknet.draw(frame)
 			frame = roadline_detector.draw(frame)
+			frame = darknet.draw(frame)
 
 			if i > 0:
-				cv2.imshow('frame', frame)
+				cv2.imshow("frame", frame)
 				if cv2.waitKey(1) & 0xFF == ord('q'):
 					break
 			disp.update(slam.slam_map)
