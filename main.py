@@ -41,13 +41,15 @@ if __name__ == '__main__':
 		ret, frame = capture.read()
 
 		if ret == True:
-			# frame = cv2.resize(frame, (W, H))
+			frame = cv2.resize(frame, (W, H))
 
 			darknet.input(frame)
 			roadline_detector.input(frame)
 			frame = slam.input(frame)
-			frame = roadline_detector.draw(frame)
-			frame = darknet.draw(frame)
+
+			if isinstance(frame, np.ndarray):
+				frame = roadline_detector.draw(frame)
+				frame = darknet.draw(frame)
 
 			if i > 0:
 				cv2.imshow("frame", frame)

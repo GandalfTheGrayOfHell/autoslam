@@ -13,21 +13,25 @@ class RoadLineDetector(object):
 		self.BottomLeftX, self.BottomRightX = 0, 0
 		self.TopRightX, self.TopRightY = 0, 0
 
-		cols, rows = shape
-		print(shape)
-		self.bottom_left = [int(cols * 0.22), int(rows * 1)]
-		self.top_left = [int(cols * 0.50), int(rows * 0.65)]
-		self.bottom_right = [int(cols * 1), int(rows * 1)]
-		self.top_right = [int(cols * 0.70), int(rows * 0.65)]
+		self.W, self.H = shape
+
+		self.bottom_left = [int(self.W * 0.22), int(self.H * 1)]
+		self.top_left = [int(self.W * 0.50), int(self.H * 0.65)]
+		self.bottom_right = [int(self.W * 1), int(self.H * 1)]
+		self.top_right = [int(self.W * 0.70), int(self.H * 0.65)]
 	
 	def draw(self, image):
 		if self.drawRoadLine == 1:
-			cv2.line(image, (self.TopLeftX, self.TopLeftY), (self.BottomLeftX, image.shape[0]), (255, 0, 0), 8)
-			cv2.line(image, (self.TopRightX, self.TopRightY), (self.BottomRightX, image.shape[0]), (255, 0, 0), 8)
+			cv2.line(image, (self.TopLeftX, self.TopLeftY), (self.BottomLeftX, image.shape[0]), (255, 0, 0), 4)
+			cv2.line(image, (self.TopRightX, self.TopRightY), (self.BottomRightX, image.shape[0]), (255, 0, 0), 4)
 
 			top = (self.TopLeftX + int((self.TopRightX - self.TopLeftX) / 2), self.TopLeftY)
 			bottom = (self.BottomLeftX + int((self.BottomRightX - self.BottomLeftX) / 2), image.shape[0])
 			cv2.line(image, top, bottom, (255, 255, 255), 1)
+
+			# verticle line with offset
+			# half = (image.shape[1] // 2) + 80
+			# cv2.line(image, (half, 0), (half, self.W), (255, 255, 0), 2)
 
 			if self.drawRoadRegion == 1:
 				window_img = np.zeros_like(image)
@@ -52,7 +56,7 @@ class RoadLineDetector(object):
 		left_sides = { 'x': [], 'y': [] }
 		right_sides = { 'x': [], 'y': [] }
 
-		half = (image.shape[1] // 2) + 140
+		half = (image.shape[1] // 2) + 80
 		
 		for lane in lines:
 			for x1, y1, x2, y2 in lane:
@@ -100,7 +104,6 @@ class RoadLineDetector(object):
 			self.TopRightY = self.TopLeftY
 			self.TopRightX = int(self.TopRightY * a_right + b_right)
 
-		# cv2.line(image, (half, 0), (half, cols), (255, 255, 0), 2)
 		
 		ratio_road = int((image.shape[1] - (self.BottomRightX - self.BottomLeftX)) / 2)
 		steering = (self.BottomLeftX / ratio_road) - 1
@@ -111,6 +114,7 @@ class RoadLineDetector(object):
 			string_steering = 'move to right: %.2fm' % (steering)
 
 		print(string_steering, flush=False)
+
 
 	def region_of_interest(self, img, vertices):
 		mask = np.zeros_like(img)   
