@@ -1,8 +1,9 @@
+
 "C:\Program Files (x86)\IntelSWTools\compilers_and_libraries\windows\tbb\bin\tbbvars.bat" intel64 
 
-set "openCvSource=C:\code\lib\opencv\opencv-4.2.0" 
+set "openCvSource=W:\Libs\opencv-4.2.0" 
 
-set "openCVExtraModules=C:\code\lib\opencv\opencv_contrib-4.2.0\modules" 
+set "openCVExtraModules=W:\Libs\opencv_contrib-4.2.0\modules" 
 
 set "openCvBuild=%openCvSource%\build" 
 
@@ -10,15 +11,13 @@ set "buildType=Release"
 
 set "generator=Visual Studio 16 2019" 
 
-set "pathToAnaconda=C:/Users/tan/anaconda3"
+set "pathToAnaconda=W:/Programs/Anaconda"
 
-set "pyVer=37" 
+set "pyVer=38"
 
-"C:\Program Files\CMake\bin\cmake.exe" -B"%openCvBuild%/" -H"%openCvSource%/" -G"%generator%" -DCMAKE_BUILD_TYPE=%buildType% -DOPENCV_EXTRA_MODULES_PATH="%openCVExtraModules%/" -DINSTALL_TESTS=ON -DINSTALL_C_EXAMPLES=OFF -DBUILD_EXAMPLES=ON -DBUILD_opencv_world=ON -DWITH_CUDA=ON -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" -DCUDA_FAST_MATH=ON -DWITH_CUBLAS=ON -DCUDA_ARCH_BIN=5.3,6.0,6.1,7.0,7.5 -DCUDA_ARCH_PTX=7.5 -DWITH_NVCUVID=OFF -DWITH_OPENGL=ON -DWITH_MFX=ON -DWITH_MKL=ON -DMKL_USE_MULTITHREAD=ON -DMKL_WITH_TBB=ON -DWITH_TBB=ON -DOPENCV_ENABLE_NONFREE=ON -DBUILD_opencv_rgbd=OFF -DBUILD_opencv_python3=ON -DPYTHON3_INCLUDE_DIR=%pathToAnaconda%/include -DPYTHON3_LIBRARY=%pathToAnaconda%/libs/python37.lib -DPYTHON3_EXECUTABLE=%pathToAnaconda%/python.exe -DPYTHON3_NUMPY_INCLUDE_DIRS=%pathToAnaconda%/Lib/site-packages/numpy/core/include -DPYTHON3_PACKAGES_PATH=%pathToAnaconda%/Lib/site-packages/ -DOPENCV_SKIP_PYTHON_LOADER=ON
+set "PATH=%PATH%;W:\Programs\Anaconda\Scripts;W:\Programs\Anaconda\Library;W:\Programs\Anaconda\Library\bin;W:\Programs\Anaconda\Library\mingw-w64\bin"
 
-
-"C:\Program Files\CMake\bin\cmake.exe" -B"%openCvBuild%/" -H"%openCvSource%/" -G"%generator%" -DCMAKE_BUILD_TYPE=%buildType% -DOPENCV_EXTRA_MODULES_PATH="%openCVExtraModules%/" -DINSTALL_TESTS=ON -DINSTALL_C_EXAMPLES=OFF -DBUILD_EXAMPLES=ON -DBUILD_opencv_world=ON -DWITH_CUDA=ON -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" -DCUDA_FAST_MATH=ON -DWITH_CUBLAS=ON -DCUDA_ARCH_BIN=5.3,6.0,6.1,7.0,7.5 -DCUDA_ARCH_PTX=7.5 -DWITH_NVCUVID=OFF -DWITH_OPENGL=ON -DWITH_MFX=ON -DWITH_MKL=ON -DMKL_USE_MULTITHREAD=ON -DMKL_WITH_TBB=ON -DWITH_TBB=ON -DOPENCV_ENABLE_NONFREE=ON -DBUILD_opencv_rgbd=OFF -DOPENCV_SKIP_PYTHON_LOADER=ON -DBUILD_opencv_gapi=OFF -DBUILD_opencv_python3=ON -DPYTHON3_INCLUDE_DIR=C:/Users/tan/AppData/Local/Programs/Python/Python38/include -DPYTHON3_LIBRARY=C:/Users/tan/AppData/Local/Programs/Python/Python38/libs/python38.lib -DPYTHON3_EXECUTABLE=C:/Users/tan/AppData/Local/Programs/Python/Python38/python.exe -DPYTHON3_NUMPY_INCLUDE_DIRS=C:/Users/tan/AppData/Local/Programs/Python/Python38/Lib/site-packages/numpy/core/include -DPYTHON3_PACKAGES_PATH=C:/Users/tan/AppData/Local/Programs/Python/Python38/Lib/site-packages -DOPENCV_SKIP_PYTHON_LOADER=ON
-
+"W:\Programs\Cmake\bin\cmake.exe" -B"%openCvBuild%/" -H"%openCvSource%/" -G"%generator%" -DCMAKE_BUILD_TYPE=%buildType% -DOPENCV_EXTRA_MODULES_PATH="%openCVExtraModules%/" -DINSTALL_TESTS=OFF -DINSTALL_C_EXAMPLES=OFF -DBUILD_EXAMPLES=ON -DBUILD_opencv_world=ON -DWITH_CUDA=ON -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" -DCUDA_FAST_MATH=ON -DWITH_CUBLAS=ON -DWITH_CUDNN=ON -DOPENCV_DNN_CUDA=ON -DCUDA_ARCH_BIN=6.0,6.1,7.0,7.5 -DCUDA_ARCH_PTX=7.5 -DWITH_NVCUVID=ON -DWITH_OPENGL=ON -DWITH_MFX=ON -DWITH_MKL=ON -DMKL_USE_MULTITHREAD=ON -DMKL_WITH_TBB=ON -DWITH_TBB=ON -DOPENCV_ENABLE_NONFREE=ON -DBUILD_opencv_rgbd=ON -DBUILD_opencv_python3=ON -DPYTHON3_INCLUDE_DIR=%pathToAnaconda%/include -DPYTHON3_LIBRARY=%pathToAnaconda%/libs/python%pyVer%.lib -DPYTHON3_EXECUTABLE=%pathToAnaconda%/python.exe -DPYTHON3_NUMPY_INCLUDE_DIRS=%pathToAnaconda%/Lib/site-packages/numpy/core/include -DPYTHON3_PACKAGES_PATH=%pathToAnaconda%/Lib/site-packages/ -DOPENCV_SKIP_PYTHON_LOADER=ON -DCUDNN_VERSION="8.0"
 
 
-"C:\Program Files\CMake\bin\cmake.exe" --build %openCvBuild% --target INSTALL --config Release
+"W:\Programs\Cmake\bin\cmake.exe" --build %openCvBuild% --target INSTALL --config Release
